@@ -35,7 +35,8 @@ namespace ShutdownIfDontUsed
         private int itempLimite = 1;      // valeur en minutes répresentant à partir de combien de temps la programme d'arrêt (interface graphique) sera lancé
         private int icancelTimer = 40;    // valeur en secondes representant le temps de possibilité d'annulation de l'arrêt (cette valeur sera transmise via arguments au programme d'arrêt )
         private string userName;          // nom de l'utilisateur connecté s'il y en a un.
-        private Timer timer;                
+        private Timer timer;
+        String currentDIrectory = Directory.GetCurrentDirectory();
 
         #region Readonlys
 
@@ -132,20 +133,27 @@ namespace ShutdownIfDontUsed
         private void TestIfUserIsConnected()
         {
             Process[] processes = Process.GetProcessesByName("winlogon");
+            Process winlogonProcess;
             if (processes.Any())
             {
-                int userProcess = processes[0].SessionId;                
+                int userProcess = processes[0].SessionId;
                 userName = GetUsername(userProcess);
-                // System.IO.File.AppendAllLines(@"c:\Shutdown\log.txt", new string[] { "l'id correspond au user : " + userName });
-            }
-            if (userName == "SYSTEM")
-            {
-                b_Logon = false;
-            }
-            else  // un utilisateur s'est connecté
-            {
-                b_Logon = true;
-                iTempsPasse = 0; // remise à zéro du compteur
+                winlogonProcess = processes[0];
+                if (userName == "SYSTEM")
+                {
+                    b_Logon = false;
+                }
+                else  // un utilisateur s'est connecté
+                {
+                    b_Logon = true;
+                    iTempsPasse = 0; // remise à zéro du compteur                                
+                    var processStartInfo = new ProcessStartInfo("shutdown", " /a"); // annulation d'un éventuel arret en cours
+                    processStartInfo.UseShellExecute = true;
+                    processStartInfo.CreateNoWindow = false;
+                    processStartInfo.WindowStyle = ProcessWindowStyle.Normal;
+                    processStartInfo.WorkingDirectory = Environment.SystemDirectory;
+                    var start = Process.Start(processStartInfo);
+                }
             }
         }
 
@@ -174,8 +182,9 @@ namespace ShutdownIfDontUsed
             {                        // nous pouvons tester si nous n'avons pas dépassé la durée limite
                 if (iTempsPasse >= itempLimite)
                 {
-                    DateTime thisDay = DateTime.Today;
-                    System.IO.File.AppendAllLines(@"c:\Shutdown\log.txt", new string[] { thisDay.ToString()+" : Temps d'inactivité atteint " + iTempsPasse + " minute(s)" });
+                    DateTime thisDay = DateTime.Now;
+                    var logLine = new string[] { thisDay.ToString("dddd, dd MMMM yyyy HH:mm:ss") + " : Temps d'inactivité atteint " + iTempsPasse + " minute(s)" };
+                    System.IO.File.AppendAllLines(Path.GetDirectoryName(currentDIrectory) + @"\log.txt",  logLine );
                     b_shutdown = true; // on passe le flag à true pour éviter des tests maintenant inutiles.
                     timer.Stop(); // on arrete le Timer
                     Process[] processes = Process.GetProcessesByName("winlogon"); // on recupere le(s) process Winlogon
