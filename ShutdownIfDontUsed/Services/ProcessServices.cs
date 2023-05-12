@@ -205,8 +205,7 @@ public class ProcessServices : IProcessServices
                 try
                 {
                     block   = GetEnvironmentBlock(token);
-                    success = LaunchProcess(processCommandLine, processWorkingDirectory, token, block);
-                    // System.IO.File.AppendAllLines(@"c:\Shutdown\log.txt", new string[] { "success " + processCommandLine +" "+ success });
+                    success = LaunchProcess(processCommandLine, processWorkingDirectory, token, block);                    
                 }
                 finally
                 {
